@@ -1,0 +1,23 @@
+{
+  "name": "thingspark-pebble-config",
+  "version": "0.9.0",
+  "description": "Configuration for ThingSpark pebble watchapp",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adamcohenrose/thingspark-pebble.git"
+  },
+  "author": "Adam Cohen-Rose",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/adamcohenrose/thingspark-pebble/issues"
+  },
+  "homepage": "https://github.com/adamcohenrose/thingspark-pebble#readme",
+  "devDependencies": {
+    "grunt-bower-task": "^0.4.0",
+    "http-server": "^0.8.5"
+  }
+}

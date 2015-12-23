@@ -1,0 +1,5 @@
+build
+config/bower_components
+.lock*
+config/lib
+config/node_modules

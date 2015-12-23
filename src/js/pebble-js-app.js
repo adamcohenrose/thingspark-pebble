@@ -1,135 +1,86 @@
-// Function to send a message to the Pebble using AppMessage API
-function sendMessage()
-{
-	Pebble.sendAppMessage({"status": 0});
-	
-	// PRO TIP: If you are sending more than one message, or a complex set of messages, 
-	// it is important that you setup an ackHandler and a nackHandler and call 
-	// Pebble.sendAppMessage({ /* Message here */ }, ackHandler, nackHandler), which 
-	// will designate the ackHandler and nackHandler that will be called upon the Pebble 
-	// ack-ing or nack-ing the message you just sent. The specified nackHandler will 
-	// also be called if your message send attempt times out.
-}
-
-
 // Called when JS is ready
-Pebble.addEventListener("ready",
-function(e)
-{
-	console.log("ready");
+Pebble.addEventListener("ready", function(e) {
+  console.log("PebbleKit JS ready");
+});
 
-	try
-	{
-		var settings = JSON.parse(localStorage.getItem("settings"));
-		console.log("Settings: " + localStorage.getItem("settings"));
+Pebble.addEventListener('showConfiguration', function(e) {
+  var url = 'http://thingspark.cohen-rose.org/';
+  console.log("Showing configuration page: " + url);
+  Pebble.openURL(url);
+});
 
-		Pebble.sendAppMessage(settings);
-	}
-	catch(err)
-	{
-		console.log("No JSON response or received Cancel event");
-	}	
-}
-);
-												
+Pebble.addEventListener('webviewclosed', function(e) {
+  var settings = JSON.parse(decodeURIComponent(e.response));
+  settings.msgType = 'settings';
+  console.log("Configuration page returned: " + JSON.stringify(settings));
+
+  Pebble.sendAppMessage(settings, function() {
+    console.log('Send successful!');
+  }, function() {
+    console.log('Send failed!');
+  });
+});
+
 // Called when incoming message from the Pebble is received
-Pebble.addEventListener("appmessage",
-function(e)
-{
-	var feed = e.payload.feed;
-	var channel = e.payload.channel;
-	var chartWidth = e.payload.chartWidth.toFixed(1);
-	var chartHeight = e.payload.chartHeight.toFixed(1);
-	
-	if (chartWidth === undefined)
-		chartHeight = 32.0;
-	
-	if (chartHeight === undefined)
-		chartHeight = 32.0;
+Pebble.addEventListener("appmessage", function(e) {
+  var channelId = e.payload.channelId;
+  var fieldNum = e.payload.fieldNum;
+  var chartHeight = e.payload.chartHeight;
+  var apiKey = e.payload.apiKey;
+  var graphWidth = e.payload.graphWidth;
+  requestFeed(channelId, fieldNum, chartHeight, apiKey, graphWidth);
+});
 
-	requestFeed(feed, channel, chartWidth, chartHeight);
-}
-);
+function requestFeed(channelId, fieldNum, chartHeight, apiKey, graphWidth) {
+  var req = new XMLHttpRequest();
+  var url = 'https://api.thingspeak.com/channels/' 
+          + channelId + '/fields/' + fieldNum + '.json?results=' + graphWidth;
+  if (apiKey) {
+    url += '&api_key=' + apiKey;
+  }
+  console.log("fetching feed from: " + url);
 
-Pebble.addEventListener('showConfiguration', function(e)
-{
-	var url = 'http://www.cbrunner.at/pebble.html?' + encodeURIComponent(localStorage.getItem("settings"));  
-	console.log("showConfiguration: " + url);
-	Pebble.openURL(url);
-}
-);
+  req.open('GET', url);
+  req.onload = function(e) {
+    // prepare response for Pebble app
+    var msg = {
+      'msgType': 'data',
+      'channelId': channelId,
+      'fieldNum': fieldNum,
+      'data': "",
+    };
+    if (req.readyState == 4 && req.status == 200) {
+      var response = JSON.parse(req.responseText);
+      console.log("reading feed for " 
+        + response.channel.name + " / " + response.channel['field' + fieldNum]);
+      var rawData = new Array();
+      var datapoints = response.feeds;
+      for (var idx = 0; idx < datapoints.length; idx++) {
+        rawData.push(parseFloat(datapoints[idx]['field' + fieldNum]));
+        //console.log(datapoints[idx]['field' + fieldNum] + " @ " + datapoints[idx].created_at);
+      }
 
-Pebble.addEventListener('webviewclosed',
-function(e)
-{
-	
-	try
-	{
-		var settings = JSON.parse(decodeURIComponent(e.response));
-		localStorage.clear();
-		localStorage.setItem("settings", JSON.stringify(settings));
-		console.log("Settings: " + localStorage.getItem("settings"));
-		
-		Pebble.sendAppMessage(settings);
-	}
-	catch(err)
-	{
-		console.log("No JSON response or received Cancel event");
-	}	
-}
-);
+      // calculate height-adjusted values
+      var valueMin = Math.min.apply(null, rawData);
+      var valueMax = Math.max.apply(null, rawData);
+      var step = (valueMax - valueMin) / (chartHeight - 1.0);
 
-function requestFeed(feed, channel, chartWidth, chartHeight)
-{
-	var settings = JSON.parse(localStorage.getItem("settings"));
+      var scaledValue = 0;
+      for (idx = 0; idx < rawData.length; idx++) {
+        scaledValue = Math.round((rawData[idx] - valueMin) / step);
+        msg.data += String.fromCharCode(scaledValue + 65);
+        //console.log(rawData[idx] + " @ " + scaledValue);
+      }
+      msg.value = rawData[rawData.length - 1].toFixed(1);
+      msg.valueMin = valueMin.toFixed(1);
+      msg.valueMax = valueMax.toFixed(1);
+      
+    } else {
+      msg.value = 'N/A';
+      msg.valueMin = msg.valueMax = 'error';
+    }
 
-	var req = new XMLHttpRequest();
-	var url = 'https://api.xively.com/v2/feeds/' + feed + '/datastreams/' + channel + '.json?interval=' + settings.interval + '&duration=' + settings.duration + '&key=' + settings.apiKey;
-
-	req.open('GET', url, true);
-	req.onload = function(e)
-	{
-		if (req.readyState == 4 && req.status == 200)
-		{
-			if(req.status == 200)
-			{
-				var response = JSON.parse(req.responseText);
-				
-				var rawData = new Array();
-				
-				for (var idx = response.datapoints.length - 1; idx >= 0  && rawData.length < chartWidth; idx--)
-				{
-					rawData.push(parseFloat(response.datapoints[idx].value));
-					// console.log(response.datapoints[idx].value + " @ " + response.datapoints[idx].at);
-				}
-				
-				var chart = "";
-				var value = response.current_value;
-				var valueMin = Math.min.apply(null, rawData);
-				var valueMax = Math.max.apply(null, rawData);
-				var step = (valueMax - valueMin) / (chartHeight - 1.0);
-			
-				for (idx = rawData.length - 1; idx >= 0 ; idx--)
-				{
-					chart += String.fromCharCode(Math.round((rawData[idx] - valueMin) / step) + 65);
-					// console.log(rawData[idx] + " @ " + Math.round((rawData[idx] - minValue) / step));
-				}
-
-				console.log("feed: " + feed + ", channel: " + channel + ", value: " + parseFloat(value).toFixed(1) + ", valueMin: " + parseFloat(valueMin).toFixed(1) + ", valueMax: " + parseFloat(valueMax).toFixed(1));
-				Pebble.sendAppMessage({ 'feed':feed, 'channel':channel, 'value':parseFloat(value).toFixed(1), 'valueMin':parseFloat(valueMin).toFixed(1), 'valueMax':parseFloat(valueMax).toFixed(1), 'data':chart });
-			}
-			else
-			{
-				console.log('Error');
-				Pebble.sendAppMessage({ 'feed':feed, 'channel':channel, 'value':'N/A', 'valueMax':'error', 'valueMin':'error', 'data':'' });
-			}
-		}
-		else
-		{
-			console.log('Error');
-			Pebble.sendAppMessage({ 'feed':feed, 'channel':channel, 'value':'N/A', 'valueMax':'error', 'valueMin':'error', 'data':'' });
-		}
-			
-	};
-	req.send(null);
+    Pebble.sendAppMessage(msg);
+  };
+  req.send();
 }

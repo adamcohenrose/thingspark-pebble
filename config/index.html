@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <link rel='stylesheet' type='text/css' href='/lib/pebble-slate/css/slate.min.css'>
+  <link rel='stylesheet' type='text/css' href='/css/style.css'>
+</head>
+<body>
+  <div class='item-container'>
+    <h1 class='title'>ThingSpark<br>Configuration</h1>
+  </div>
+
+  <div class='item-container'>
+    <div class='item-container-content'>
+      <div class='item'>
+        Configure the ThingSpeak feeds that will show on your Pebble watch.
+      </div>
+    </div>
+  </div>
+
+  <div class="item-container">
+    <div class="item-container-header">Feed Details</div>
+    <div class="item-container-content">
+      <label class="item">
+        Channel ID
+        <div class="item-input-wrapper number-wrapper">
+          <input type="number" class="item-input" 
+            id="channelId" placeholder="e.g. 9">
+        </div>
+      </label>
+      <label class="item">
+        Field number
+        <select id="fieldNum" class="item-select">
+          <option class="item-select-option">1</option>
+          <option class="item-select-option">2</option>
+          <option class="item-select-option">3</option>
+          <option class="item-select-option">4</option>
+          <option class="item-select-option">5</option>
+          <option class="item-select-option">6</option>
+          <option class="item-select-option">7</option>
+          <option class="item-select-option">8</option>
+        </select>
+      </label>
+      <label class="item">
+        API Key (for private feeds)
+        <div class="item-input-wrapper">
+          <input type="text" class="item-input" 
+            id="apiKey" placeholder="(optional)">
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div class='item-container'>
+    <div class='button-container'>
+      <input id='submitButton' type='button' class='item-button' value='Save'>
+    </div>
+  </div>
+
+  <script src='/lib/pebble-slate/js/slate.min.js'></script>
+  <script src='/js/main.js'></script>
+</body>
+</html>

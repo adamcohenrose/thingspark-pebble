@@ -1,0 +1,26 @@
+{
+  "name": "config",
+  "version": "0.0.0",
+  "homepage": "https://github.com/adamcohenrose/thingspark-pebble",
+  "authors": [
+    "Adam Cohen-Rose <pebble-dev@cohen-rose.org>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "pebble-slate": "~0.0.3"
+  },
+  "exportsOverride": {
+    "pebble-slate": {
+      "js": "dist/js/slate.min.js",
+      "css": "dist/css/slate.min.css",
+      "fonts": "dist/fonts/*.woff"
+    }
+  }
+}
