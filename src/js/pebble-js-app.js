@@ -4,7 +4,7 @@ Pebble.addEventListener("ready", function(e) {
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-  var url = 'http://thingspark.cohen-rose.org/';
+  var url = 'http://cohen-rose.org/thingspark/';
   console.log("Showing configuration page: " + url);
   Pebble.openURL(url);
 });
